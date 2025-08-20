@@ -1,95 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <title>Daftar Siswa</title>
-  <style>
-    table {
-      border-collapse: collapse;
-      width: 80%;
-      margin: 20px auto;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    button {
-      padding: 5px 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 font-sans">
 
-<h2 style="text-align:center;">Daftar Siswa (Kolom B & D)</h2>
-<table id="tabelSiswa">
-  <thead>
-    <tr>
-      <th>No</th>
-      <th>Nama Siswa (B)</th>
-      <th>Kelas (D)</th>
-      <th>Aksi</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold text-center mb-4">Daftar Siswa</h1>
 
-<script>
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+    <!-- Filter Kelas -->
+    <div class="flex justify-center mb-4">
+      <label for="filterKelas" class="mr-2 font-medium">Filter Kelas:</label>
+      <select id="filterKelas" class="border px-3 py-1 rounded">
+        <option value="ALL">Semua</option>
+        <option value="VII">Kelas VII</option>
+        <option value="VIII">Kelas VIII</option>
+        <option value="IX">Kelas IX</option>
+      </select>
+    </div>
 
-// Folder link berdasarkan kelas
-const driveLinks = {
-  'VII': 'https://drive.google.com/drive/folders/1c9wUDsmovOutBIL0GSw11i0jxdoFKBeh?usp=drive_link',
-  'VIII': 'https://drive.google.com/drive/folders/1B0uwPOfSu2Dgj-_8mGL5mRQLebFtCVaZ?usp=drive_link',
-  'IX': 'https://drive.google.com/drive/folders/10LJ3K5DISdNUkSK6H71M9OHIk_3Aq_yE?usp=drive_link'
-};
+    <!-- Tabel -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white rounded shadow">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="py-2 px-4 border">No</th>
+            <th class="py-2 px-4 border">Nama Siswa</th>
+            <th class="py-2 px-4 border">Kelas</th>
+            <th class="py-2 px-4 border">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tabelSiswa"></tbody>
+      </table>
+    </div>
 
-fetch(csvUrl)
-  .then(response => {
-    if (!response.ok) {
-      throw new Error("HTTP error " + response.status);
+    <!-- Pagination -->
+    <div class="flex justify-center mt-4 space-x-4">
+      <button id="prevBtn" class="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50">Sebelumnya</button>
+      <button id="nextBtn" class="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50">Berikutnya</button>
+    </div>
+  </div>
+
+  <script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+
+    const driveLinks = {
+      'VII': 'https://drive.google.com/drive/folders/1c9wUDsmovOutBIL0GSw11i0jxdoFKBeh?usp=drive_link',
+      'VIII': 'https://drive.google.com/drive/folders/1B0uwPOfSu2Dgj-_8mGL5mRQLebFtCVaZ?usp=drive_link',
+      'IX': 'https://drive.google.com/drive/folders/10LJ3K5DISdNUkSK6H71M9OHIk_3Aq_yE?usp=drive_link'
+    };
+
+    let allData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+
+    const tbody = document.getElementById("tabelSiswa");
+    const filterSelect = document.getElementById("filterKelas");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    function renderTable(data) {
+      tbody.innerHTML = "";
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pageData = data.slice(start, end);
+
+      pageData.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        const no = start + idx + 1;
+        const nama = row.nama;
+        const kelas = row.kelas;
+        const link = driveLinks[kelas] || "#";
+        const aksi = link !== "#" 
+          ? `<a href="${link}" target="_blank"><button class="bg-green-500 text-white px-3 py-1 rounded">Upload Tugas</button></a>`
+          : `<span class="text-red-500">Tidak tersedia</span>`;
+
+        tr.innerHTML = `
+          <td class="border px-4 py-2 text-center">${no}</td>
+          <td class="border px-4 py-2">${nama}</td>
+          <td class="border px-4 py-2 text-center">${kelas}</td>
+          <td class="border px-4 py-2 text-center">${aksi}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = end >= data.length;
     }
-    return response.text();
-  })
-  .then(csvText => {
-    const rows = csvText.trim().split('\n').map(line => line.split(','));
-    const tbody = document.querySelector("#tabelSiswa tbody");
-    const dataRows = rows.slice(1);
 
-    dataRows.slice(0, 41).forEach((row, idx) => {
-      const nama = row[1] ? row[1].trim() : "-";
-      const kelas = row[3] ? row[3].trim().toUpperCase() : "-";
-      const linkUpload = driveLinks[kelas] || "#";
+    function applyFilter() {
+      const selected = filterSelect.value;
+      currentPage = 1;
+      if (selected === "ALL") {
+        renderTable(allData);
+      } else {
+        const filtered = allData.filter(row => row.kelas === selected);
+        renderTable(filtered);
+      }
+    }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td>${nama}</td>
-        <td>${kelas}</td>
-        <td>
-          ${linkUpload !== "#" ? 
-            `<a href="${linkUpload}" target="_blank"><button>Upload Tugas</button></a>` :
-            `<span style="color: red;">Link tidak tersedia</span>`
-          }
-        </td>
-      `;
-      tbody.appendChild(tr);
+    filterSelect.addEventListener("change", applyFilter);
+    prevBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        applyFilter();
+      }
     });
-  })
-  .catch(err => {
-    console.error("Gagal memuat data CSV:", err);
-  });
-</script>
+    nextBtn.addEventListener("click", () => {
+      const selected = filterSelect.value;
+      const filtered = selected === "ALL" ? allData : allData.filter(row => row.kelas === selected);
+      if (currentPage * rowsPerPage < filtered.length) {
+        currentPage++;
+        renderTable(filtered);
+      }
+    });
+
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').map(line => line.split(','));
+        const dataRows = rows.slice(1).slice(0, 41); // Skip header, limit to B2–D42
+
+        allData = dataRows.map(row => ({
+          nama: row[1]?.trim() || "-",
+          kelas: row[3]?.trim().toUpperCase() || "-"
+        }));
+
+        renderTable(allData);
+      })
+      .catch(err => console.error("Gagal memuat CSV:", err));
+  </script>
 
 </body>
 </html>
