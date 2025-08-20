@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistem Upload Foto</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-blue-700 text-white p-4 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-50">
+    <h2 class="text-xl font-bold mb-6">Menu</h2>
+    <ul class="space-y-3">
+      <li><a href="#" onclick="showPage('daftar')" class="block px-3 py-2 rounded hover:bg-blue-600">Daftar Siswa</a></li>
+      <li><a href="#" onclick="showPage('upload')" class="block px-3 py-2 rounded hover:bg-blue-600">Upload Foto</a></li>
+    </ul>
+  </aside>
+
+  <!-- Overlay (HP) -->
+  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40 md:hidden"></div>
+
+  <!-- Konten -->
+  <main class="flex-1 p-6 md:ml-64 w-full">
+    <!-- Tombol Hamburger -->
+    <button id="menuBtn" class="md:hidden mb-4 bg-blue-700 text-white px-4 py-2 rounded">
+      ☰ Menu
+    </button>
+
+    <!-- Halaman Daftar -->
+    <section id="page-daftar">
+      <h1 class="text-2xl font-bold text-center mb-4">Daftar Siswa</h1>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded shadow">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="py-2 px-4 border">No</th>
+              <th class="py-2 px-4 border">Nama Siswa</th>
+              <th class="py-2 px-4 border">Kelas</th>
+              <th class="py-2 px-4 border">Foto</th>
+            </tr>
+          </thead>
+          <tbody id="tabelSiswa"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Halaman Upload -->
+    <section id="page-upload" class="hidden">
+      <h1 class="text-2xl font-bold text-center mb-4">Upload Foto</h1>
+      <form id="uploadForm" class="space-y-4 bg-white p-6 rounded shadow max-w-lg mx-auto">
+        <div>
+          <label class="block font-medium mb-1">Nama Siswa</label>
+          <select id="namaSiswa" class="w-full border px-3 py-2 rounded"></select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Pilih Foto (JPG/PNG)</label>
+          <input type="file" id="fotoFile" accept="image/png,image/jpeg" class="w-full border px-3 py-2 rounded">
+        </div>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Upload</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Sidebar toggle
+  const menuBtn = document.getElementById("menuBtn");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+
+  menuBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("-translate-x-full");
+    overlay.classList.toggle("hidden");
+  });
+  overlay.addEventListener("click", () => {
+    sidebar.classList.add("-translate-x-full");
+    overlay.classList.add("hidden");
+  });
+
+  // Halaman switch
+  function showPage(page) {
+    document.getElementById("page-daftar").classList.add("hidden");
+    document.getElementById("page-upload").classList.add("hidden");
+    document.getElementById("page-" + page).classList.remove("hidden");
+  }
+
+  // Load daftar siswa dari CSV
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+  let allData = [];
+
+  fetch(csvUrl)
+    .then(res => res.text())
+    .then(csv => {
+      const rows = csv.trim().split("\n").map(l => l.split(","));
+      const dataRows = rows.slice(1);
+
+      allData = dataRows.map(row => ({
+        nama: row[1]?.trim() || "-",
+        kelas: row[3]?.trim().toUpperCase() || "-"
+      }));
+
+      // isi tabel
+      const tbody = document.getElementById("tabelSiswa");
+      tbody.innerHTML = "";
+      allData.forEach((s, i) => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="border px-4 py-2 text-center">${i+1}</td>
+            <td class="border px-4 py-2">${s.nama}</td>
+            <td class="border px-4 py-2 text-center">${s.kelas}</td>
+            <td class="border px-4 py-2 text-center" id="foto-${s.nama.replace(/\s/g,'')}">-</td>
+          </tr>
+        `;
+      });
+
+      // isi dropdown upload
+      const select = document.getElementById("namaSiswa");
+      select.innerHTML = allData.map(s => `<option value="${s.nama}">${s.nama} (${s.kelas})</option>`).join("");
+    });
+
+  // Upload foto ke Apps Script
+  document.getElementById("uploadForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const nama = document.getElementById("namaSiswa").value;
+    const fileInput = document.getElementById("fotoFile");
+    if (!fileInput.files[0]) return alert("Pilih foto dulu!");
+
+    const formData = new FormData();
+    formData.append("nama", nama);
+    formData.append("file", fileInput.files[0]);
+
+    const response = await fetch("YOUR_SCRIPT_URL", { // ganti dengan URL webapp Apps Script
+      method: "POST",
+      body: formData
+    });
+    const result = await response.json();
+    if (result.status === "success") {
+      alert("Foto berhasil diupload!");
+      const cell = document.getElementById("foto-" + nama.replace(/\s/g,''));
+      cell.innerHTML = `<img src="${result.url}" alt="foto" class="w-16 h-16 object-cover mx-auto rounded">`;
+    } else {
+      alert("Gagal upload: " + result.message);
+    }
+  });
+</script>
+</body>
+</html>
