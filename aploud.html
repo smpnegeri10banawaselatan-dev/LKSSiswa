@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Daftar Siswa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-blue-700 text-white p-4 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-50">
+      <h2 class="text-xl font-bold mb-6">Menu</h2>
+      <ul class="space-y-3">
+        <li><a href="index.html" class="block px-3 py-2 rounded hover:bg-blue-600">Daftar Siswa</a></li>
+      </ul>
+    </aside>
+
+    <!-- Overlay (untuk HP) -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40 md:hidden"></div>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 p-6 md:ml-64 w-full">
+      <!-- Tombol Hamburger (Muncul di HP) -->
+      <button id="menuBtn" class="md:hidden mb-4 bg-blue-700 text-white px-4 py-2 rounded">
+        ☰ Menu
+      </button>
+
+      <h1 class="text-2xl font-bold text-center mb-4">Daftar Siswa</h1>
+
+      <!-- Filter Kelas -->
+      <div class="flex justify-center mb-4">
+        <label for="filterKelas" class="mr-2 font-medium">Filter Kelas:</label>
+        <select id="filterKelas" class="border px-3 py-1 rounded">
+          <option value="ALL">Semua</option>
+          <option value="VII">Kelas VII</option>
+          <option value="VIII">Kelas VIII</option>
+          <option value="IX">Kelas IX</option>
+        </select>
+      </div>
+
+      <!-- Tabel -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded shadow">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="py-2 px-4 border">No</th>
+              <th class="py-2 px-4 border">Nama Siswa</th>
+              <th class="py-2 px-4 border">Kelas</th>
+              <th class="py-2 px-4 border">Foto</th>
+              <th class="py-2 px-4 border">Upload Foto</th>
+            </tr>
+          </thead>
+          <tbody id="tabelSiswa"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-center mt-4 space-x-4">
+        <button id="prevBtn" class="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50">Sebelumnya</button>
+        <button id="nextBtn" class="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50">Berikutnya</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Toggle sidebar untuk HP
+    const menuBtn = document.getElementById("menuBtn");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+
+    menuBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("-translate-x-full");
+      overlay.classList.toggle("hidden");
+    });
+
+    overlay.addEventListener("click", () => {
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    });
+
+    // --- Script Daftar Siswa ---
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+
+    let allData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+
+    const tbody = document.getElementById("tabelSiswa");
+    const filterSelect = document.getElementById("filterKelas");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    // Simpan foto di localStorage
+    const storedPhotos = JSON.parse(localStorage.getItem("fotosiswa")) || {};
+
+    function renderTable(data) {
+      tbody.innerHTML = "";
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pageData = data.slice(start, end);
+
+      pageData.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        const no = start + idx + 1;
+        const nama = row.nama;
+        const kelas = row.kelas;
+
+        // Ambil foto dari localStorage
+        const foto = storedPhotos[nama] 
+          ? `<img src="${storedPhotos[nama]}" class="h-16 w-16 object-cover rounded-full mx-auto">`
+          : `<span class="text-gray-500">Belum ada</span>`;
+
+        tr.innerHTML = `
+          <td class="border px-4 py-2 text-center">${no}</td>
+          <td class="border px-4 py-2">${nama}</td>
+          <td class="border px-4 py-2 text-center">${kelas}</td>
+          <td class="border px-4 py-2 text-center" id="foto-${nama}">${foto}</td>
+          <td class="border px-4 py-2 text-center">
+            <input type="file" accept="image/*" class="fileInput" data-nama="${nama}">
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Event upload foto
+      document.querySelectorAll(".fileInput").forEach(input => {
+        input.addEventListener("change", function(e) {
+          const file = e.target.files[0];
+          const nama = e.target.dataset.nama;
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+              storedPhotos[nama] = evt.target.result;
+              localStorage.setItem("fotosiswa", JSON.stringify(storedPhotos));
+              document.getElementById("foto-" + nama).innerHTML =
+                `<img src="${evt.target.result}" class="h-16 w-16 object-cover rounded-full mx-auto">`;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = end >= data.length;
+    }
+
+    function applyFilter() {
+      const selected = filterSelect.value;
+      currentPage = 1;
+      if (selected === "ALL") {
+        renderTable(allData);
+      } else {
+        const filtered = allData.filter(row => row.kelas === selected);
+        renderTable(filtered);
+      }
+    }
+
+    filterSelect.addEventListener("change", applyFilter);
+    prevBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        applyFilter();
+      }
+    });
+    nextBtn.addEventListener("click", () => {
+      const selected = filterSelect.value;
+      const filtered = selected === "ALL" ? allData : allData.filter(row => row.kelas === selected);
+      if (currentPage * rowsPerPage < filtered.length) {
+        currentPage++;
+        renderTable(filtered);
+      }
+    });
+
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').map(line => line.split(','));
+        const dataRows = rows.slice(1).slice(0, 41); // Skip header, limit 40 baris
+
+        allData = dataRows.map(row => ({
+          nama: row[1]?.trim() || "-",
+          kelas: row[3]?.trim().toUpperCase() || "-"
+        }));
+
+        renderTable(allData);
+      })
+      .catch(err => console.error("Gagal memuat CSV:", err));
+  </script>
+
+</body>
+</html>
