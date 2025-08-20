@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Daftar Siswa</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 80%;
+      margin: 20px auto;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    button {
+      padding: 5px 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center;">Daftar Siswa (Kolom B & D)</h2>
+<table id="tabelSiswa">
+  <thead>
+    <tr>
+      <th>No</th>
+      <th>Nama Siswa (B)</th>
+      <th>Kelas (D)</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+
+// Folder link berdasarkan kelas
+const driveLinks = {
+  'VII': 'https://drive.google.com/drive/folders/1c9wUDsmovOutBIL0GSw11i0jxdoFKBeh?usp=drive_link',
+  'VIII': 'https://drive.google.com/drive/folders/1B0uwPOfSu2Dgj-_8mGL5mRQLebFtCVaZ?usp=drive_link',
+  'IX': 'https://drive.google.com/drive/folders/10LJ3K5DISdNUkSK6H71M9OHIk_3Aq_yE?usp=drive_link'
+};
+
+fetch(csvUrl)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("HTTP error " + response.status);
+    }
+    return response.text();
+  })
+  .then(csvText => {
+    const rows = csvText.trim().split('\n').map(line => line.split(','));
+    const tbody = document.querySelector("#tabelSiswa tbody");
+    const dataRows = rows.slice(1);
+
+    dataRows.slice(0, 41).forEach((row, idx) => {
+      const nama = row[1] ? row[1].trim() : "-";
+      const kelas = row[3] ? row[3].trim().toUpperCase() : "-";
+      const linkUpload = driveLinks[kelas] || "#";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${nama}</td>
+        <td>${kelas}</td>
+        <td>
+          ${linkUpload !== "#" ? 
+            `<a href="${linkUpload}" target="_blank"><button>Upload Tugas</button></a>` :
+            `<span style="color: red;">Link tidak tersedia</span>`
+          }
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })
+  .catch(err => {
+    console.error("Gagal memuat data CSV:", err);
+  });
+</script>
+
+</body>
+</html>
