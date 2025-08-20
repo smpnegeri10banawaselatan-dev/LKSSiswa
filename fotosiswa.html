@@ -86,7 +86,7 @@
   }
 
   // Load daftar siswa dari CSV
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd7zmZ392utUdC5rZkgYx4r_mzhrtRU89qrE8w3AGbJ1o3YdqtL_Z70-J-VaVDkBDDdACYq84jvVkS/pub?gid=794749293&single=true&output=csv";
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4iKCUTNBagkd0p8qhulOrgpI6ErZK31odNbKcPapIRuTqxmguOTFjEWE_35ARCCYvqe3UA0d-RYl6/pub?gid=0&single=true&output=csv";
   let allData = [];
 
   fetch(csvUrl)
@@ -130,7 +130,7 @@
     formData.append("nama", nama);
     formData.append("file", fileInput.files[0]);
 
-    const response = await fetch("YOUR_SCRIPT_URL", { // ganti dengan URL webapp Apps Script
+    const response = await fetch("https://script.google.com/macros/s/AKfycbxn8G-qSTO_OmVD7TqsPuHtKvlB_PhfT5uc67ppqoKy5SnWxhL4jD7lbgy0aVZYPEGfxA/exec", { // ganti dengan URL webapp Apps Script
       method: "POST",
       body: formData
     });
